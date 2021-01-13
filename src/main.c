@@ -35,7 +35,6 @@ int main(const int argc, char *argv[]) {
         if (s != NULL) {
             lexer(s);
         }
-        free(s);
     }
     return 0;
 }
