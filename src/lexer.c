@@ -12,8 +12,11 @@ int c = 0;
 void skip(void) {
     c = fgetc(file_ptr);
     /* I understand the stigma around gotos, I find it alot cleaner in this context */
-    check_space:
+    check_exit:
     for (; isspace(c) && c != EOF; c = fgetc(file_ptr));
+    if (c == EOF) {
+        return;
+    }
 
     if (c == '#') {
         /* skip compiler stuff for now */
@@ -35,23 +38,29 @@ void skip(void) {
                 }
             }
         } else {
-            fseek(file_ptr, -1L, SEEK_CUR);
-            c = '/';
+            ungetc(c, file_ptr);
         }
     }
     if (!isspace(c)) {
         return;
     }
-    goto check_space;
+    goto check_exit;
+}
+
+int see(const char* s) {
+    char* buf = malloc(strlen(s) + 1);
+    fread(buf, strlen(s), 1, file_ptr);
+    int r = strcmp(buf, s) ? strlen(s) : 0;
+    if (*buf) {
+        puts(buf);
+        free(buf);
+    }
+    return r;
 }
 
 token get_tok(void) {
     token t;
     t.i = 0;
-
-    // fseek(file_ptr, -1L, SEEK_CUR);
-    
-    /* parenthesis aren't working right now */
 
     switch (c) {
         case '=':
@@ -62,8 +71,7 @@ token get_tok(void) {
             } else {
                 t.s = "=";
                 t.i = Assign;
-                fseek(file_ptr, -1L, SEEK_CUR);
-                c = '=';
+                ungetc(c, file_ptr);
             }
             break;
         case '!':
@@ -71,6 +79,8 @@ token get_tok(void) {
             if (c == '=') {
                 t.s = "!=";
                 t.i = Ne;
+            } else {
+                ungetc(c, file_ptr);
             }
             break;
         case '<':
@@ -84,8 +94,7 @@ token get_tok(void) {
             } else {
                 t.s = "<";
                 t.i = Lt;
-                fseek(file_ptr, -1L, SEEK_CUR);
-                c = '<';
+                ungetc(c, file_ptr);
             }
             break;
         case '>':
@@ -99,8 +108,7 @@ token get_tok(void) {
             } else {
                 t.s = ">";
                 t.i = Gt;
-                fseek(file_ptr, -1L, SEEK_CUR);
-                c = '>';
+                ungetc(c, file_ptr);
             }
             break;
         case '+':
@@ -111,8 +119,7 @@ token get_tok(void) {
             } else {
                 t.s = "+";
                 t.i = Add;
-                fseek(file_ptr, -1L, SEEK_CUR);
-                c = '+';
+                ungetc(c, file_ptr);
             }
             break;
         case '-':
@@ -124,8 +131,7 @@ token get_tok(void) {
             } else {
                 t.s = "-";
                 t.i = Sub;
-                fseek(file_ptr, -1L, SEEK_CUR);
-                c = '-';
+                ungetc(c, file_ptr);
             }
             break;
         case '*':
@@ -144,6 +150,10 @@ token get_tok(void) {
             t.s = ";";
             t.i = Semi;
             break;
+        case ':':
+            t.s = ":";
+            t.i = Col;
+            break;
         case ',':
             t.s = ",";
             t.i = Comma;
@@ -151,55 +161,68 @@ token get_tok(void) {
         case '(':
             t.s = "(";
             t.i = Lpar;
+            break;
         case ')':
             t.s = ")";
             t.i = Rpar;
+            break;
         case '{':
             t.s = "{";
-            t.i = Lbr;
+            t.i = Lbc;
+            break;
         case '}':
             t.s = "}";
-            t.i = Rbr;
+            t.i = Rbc;
+            break;
         case '[':
+            t.s = "[";
+            t.i = Lbr;
+            break;
         case ']':
+            t.s = "]";
+            t.i = Rbr;
             break;
         case EOF:
             t.s = "";
             t.i = Eof;
             break;
     }
+
+
     if (t.i != 0) {
         return t;
     }
 
     int j = 1;
-    if (c >= '0' && c <= '9') {
+    if (c == '"' || c == '\'') {
+        t.i = c == '"' ? StrL : ChL;
+        int delim = c;
+        do {
+            c = fgetc(file_ptr);
+            j++;
+        } while (c != delim);
+        fseek(file_ptr, -j, SEEK_CUR);
+        t.s = (char*)malloc(j + 1);
+        fread(t.s, j, 1, file_ptr);
+        c = fgetc(file_ptr);
+    } else if (c >= '0' && c <= '9') {
         for (; (c >= '0' && c <= '9'); j++) {
-            // putchar(c);
             c = fgetc(file_ptr);
         }
         fseek(file_ptr, -j, SEEK_CUR);
-        c = fgetc(file_ptr);
         t.s = (char*)malloc(j + 1);
-        for (int i = 1; i < j; i++) {
-            *(t.s+(i-1)) = c;
-            c = fgetc(file_ptr);
-        }
+        fread(t.s, j - 1, 1, file_ptr);
+        c = fgetc(file_ptr);
         t.i = Num;
-    }
-
-    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c == '$')) {
+    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c == '$')) {
         for (; (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_') || (c == '$'); j++) {
-            // putchar(c);
             c = fgetc(file_ptr);
         }
         fseek(file_ptr, -j, SEEK_CUR);
-        c = fgetc(file_ptr);
         t.s = (char*)malloc(j + 1);
-        for (int i = 1; i < j; i++) {
-            *(t.s+(i-1)) = c;
-            c = fgetc(file_ptr);
-        }
+        fread(t.s, j - 1, 1, file_ptr);
+        c = fgetc(file_ptr);
+        t.i = Num;
         
         /* builtins */
         if (strcmp(t.s, "return") == 0) {
@@ -220,27 +243,37 @@ token get_tok(void) {
             t.i = Id;
         }
     }
+
     /* need to stop from skipping stuff */
     fseek(file_ptr, -1L, SEEK_CUR);
-    // putchar(c);
     return t;
 }
 
 token* lexer(const char* file) {
-    // static size_t bufsize = 32, p = 0;
-    token t;
+    static size_t bufsize = 16, pos = 0;
+    token* t = malloc(bufsize * sizeof(token));
     if (!(file_ptr = fopen(file, "rt"))) {
         perror(file);
         return NULL;
     }
     while (c != EOF) {
         skip();
-        t = get_tok();
-        if (t.i >= 128) {
-            printf("%s \'%s\'\n", CC_TYPES[t.i - 128], t.s);
+        t[pos] = get_tok();
+        if (t[pos].i) {
+            printf("%s \'%s\'\n", CC_TYPES[t[pos].i - 128], t[pos].s);
+            pos++;
+        }
+        if (pos >= bufsize) {
+            bufsize *= 2;
+            t = realloc(t, bufsize * sizeof(token));
         }
     }
-    // file_store[file_size] = '\0';
-    fclose(file_ptr);
     
+    fclose(file_ptr);
+
+    for (int i = 0; t[i].i != Eof; i++) {
+        if (t[i].i >= 128) {
+            printf("%s \'%s\'\n", CC_TYPES[t[i].i - 128], t[i].s);
+        }
+    }
 }
