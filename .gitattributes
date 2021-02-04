@@ -1,0 +1,4 @@
+# prevent tests from skewing language stat
+tests/* linguist-vendored
+Makefile linguist-vendored
+*.sh linguist-vendored
