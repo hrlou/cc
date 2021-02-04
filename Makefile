@@ -1,16 +1,11 @@
-INCLUDE = "-Iinclude" 
-CFLAGS = "-Wall" "-O2" "-std=c99"
-CC = gcc $(INCLUDE)$(CFLAGS)
-PREFIX = /usr/local
+INCLUDE=-Iinclude
+CFLAGS=-Wall -O2 -std=c99
+PREFIX=/usr/local
+CFILES=main.o lexer.o
 
-cc: main.o lexer.o
-	$(CC) $^ -o $@
-	
-lexer.o: src/lexer.c
-	$(CC) -c $< -o $@
-
-main.o: src/main.c
-	$(CC) -c $< -o $@
-
+cc: $(CFILES)
+	$(CC) $(INCLUDE) $^ -o $@ $(CFLAGS)
+%.o: src/%.c include/%.h
+	$(CC) $(INCLUDE) -c $< -o $@ $(CFLAGS)
 clean:
 	rm -f cc *.o *.s

@@ -1,27 +1,31 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#ifdef __LEXER_C
 enum {
-    Num = 128, Fun, Sys, Glo, Loc, Id, Literal,
+    Num = 128, Hex, Fun, Sys, Glo, Id, Charlit, Strlit,
+    Semi, Comma, Lpar, Rpar, Lbr, Rbr,
     Char, Int,
     Else, Enum, If, Return, Sizeof, While,
-    Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Brak
+    Assign, Cond, Lor, Lan, Or, Xor, And, Eq, Ne, Lt, Gt, Le, Ge, Shl, Shr, Add, Sub, Mul, Div, Mod, Inc, Dec, Eof
 };
 
+#ifdef __LEXER_C
 const char* CC_TYPES[] = {
-    "number", "function", "Sys", "Glo", "Loc", "identifier", "literal",
+    "number", "hex", "function", "Sys", "Glo", "identifier", "char_literal", "string_literal",
+    "semicolon", "comma", "l_paren", "r_paren", "l_brace", "r_brace",
     "char", "int",
-    "Else", "Enum", "if", "return", "sizeof", "while",
-    "assign", "conditional", "Lor", "Lan", "Or", "Xor", "And", "equal", "not_equal", "less_than", "greater_than", "less_equal", "greater_equal", "shift_left", "shift_right", "add", "subtract", "multiply", "divide", "modulo", "increment", "de-increment", "Brak"
+    "else", "enumerate", "if", "return", "sizeof", "while",
+    "assign", "conditional", "Lor", "Lan", "Or", "Xor", "And", "equal", "not_equal", "less_than", "greater_than", "less_equal", "greater_equal", "shift_left", "shift_right", "add", "subtract", "multiply", "divide", "modulo", "increment", "de-increment", "eof"
 };
 #endif // __LEXER_C
 
-struct lex {
-    char** tok;
-    int* id;
+struct _lexer_token {
+    char* s;
+    unsigned int i;
 };
 
-struct lex lexer(char* i);
+typedef struct _lexer_token token;
+
+token* lexer(const char* file);
 
 #endif // LEXER_H
