@@ -1,7 +1,6 @@
 INCLUDE=-Iinclude
 CFLAGS=-Wall -O2 -std=c99
-PREFIX=/usr/local
-CFILES=main.o lexer.o
+CFILES=$(patsubst src/%.c,%.o,$(wildcard src/*.c))
 
 cc: $(CFILES)
 	$(CC) $(INCLUDE) $^ -o $@ $(CFLAGS)

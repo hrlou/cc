@@ -1,5 +1,6 @@
 #include "main.h"
 #include "lexer.h"
+#include "parse.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -10,6 +11,7 @@ int main(const int argc, char *argv[]) {
         fputs("No input files\n", stderr);
         return 1;
     }
-    lexer(argv[1]);
+    parse(lexer(argv[1]));
+
     return 0;
 }
