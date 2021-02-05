@@ -1,4 +1,3 @@
-#define __LEXER_C
 #include "lexer.h"
 
 #include <string.h>
@@ -6,53 +5,70 @@
 #include <stdio.h>
 #include <ctype.h>
 
-FILE *file_ptr;
-int c = 0;
+/* initialise a lexer from the source code */
+lexer_T* lexer_init(char* s) {
+    lexer_T* lex = calloc(1, sizeof(struct LEXER));
+    lex->s = s;
+    lex->max = strlen(s);
+    lex->i = 0;
+    lex->c = s[lex->i];
+    return lex;
+}
 
-void skip(void) {
-    c = fgetc(file_ptr);
+/* advance the lexer one charecter */
+void lexer_advance(lexer_T* lex) {
+    if (lex->i < lex->max && lex->c != '\0') {
+        lex->i += 1;
+        lex->c = lex->s[lex->i];
+    }
+}
+
+/* see the <offset> spaces ahead */
+char lexer_peek(lexer_T* lex, int offset) {
+    return lex->s[((lex->i + offset) < (lex->max)) ? (lex->i + offset) : (lex->max)];
+}
+
+token_T* lexer_advance_with(lexer_T* lex, token_T* tok);
+token_T* lexer_advance_current(lexer_T* lex, int type);
+
+void lexer_skip(lexer_T* lex) {
     /* I understand the stigma around gotos, I find it alot cleaner in this context */
     check_exit:
-    for (; isspace(c) && c != EOF; c = fgetc(file_ptr));
-    if (c == EOF) {
+    for (; isspace(lex->c) && lex->c != '\0'; lexer_advance(lex));
+    if (lex->c == EOF) {
         return;
     }
 
-    if (c == '#') {
+    if (lex->c == '#') {
         /* skip compiler stuff for now */
-        for (; c != '\n'; c = fgetc(file_ptr));
-    } else if (c == '/') {
+        for (; lex->c != '\n'; lexer_advance(lex));
+    } else if (lex->c == '/') {
         /* comments */
-        c = fgetc(file_ptr);
-        if (c == '/') {
+        if (lexer_peek(lex, 1) == '/') {
             /* C++ style */
-            for (; c != '\n'; c = fgetc(file_ptr));
-        } else if (c == '*') {
+            for (; lex->c != '\n' && lex->c != '\r'; lexer_advance(lex));
+        } else if (lexer_peek(lex, 1) == '*') {
             /* C Style */
-            for (;;) {
-                for (; c != '*'; c = fgetc(file_ptr));
-                c = fgetc(file_ptr);
-                if (c == '/') {
-                    c = fgetc(file_ptr);
-                    break;
-                }
-            }
-        } else {
-            ungetc(c, file_ptr);
+            for (; (lex->c != '*') && (lexer_peek(lex, 1) != '/'); lexer_advance(lex));
         }
     }
-    if (!isspace(c)) {
+    if (!isspace(lex->c)) {
         return;
     }
     goto check_exit;
+
 }
 
-int isreserved(char ch) {
-    const char r[] = "!\"#%&\'()*+,-./:;<=>?[\\]^_{|}~";
-    return strchr(r, ch) ? 1 : 0;
+token_T* lexer_parse_id(lexer_T* lex);
+token_T* lexer_parse_number(lexer_T* lex);
+token_T* lexer_parse_hex(lexer_T* lex);
+token_T* lexer_parse_literal(lexer_T* lex);
+
+token_T* lexer_next_token(lexer_T* lex) {
+
 }
 
-token get_tok(void) {
+/*token get_tok(void) {
     token t;
     t.i = 0;
     int j = 1;
@@ -293,8 +309,7 @@ token get_tok(void) {
         fread(t.s, j - 1, 1, file_ptr);
         t.i = Id;
 
-        /* builtins */
-        /*if (strcmp(t.s, "return") == 0) {
+        if (strcmp(t.s, "return") == 0) {
             t.i = Return;
         } else if (strcmp(t.s, "if") == 0) {
             t.i = If;
@@ -308,34 +323,8 @@ token get_tok(void) {
             t.i = Int;
         } else if (strcmp(t.s, "char") == 0) {
             t.i = Char;
-        }*/
+        }
     }
-
-    /* need to stop from skipping stuff */
     // fseek(file_ptr, -1L, SEEK_CUR);
     return t;
-}
-
-token* lexer(const char* file) {
-    static size_t bufsize = 16, pos = 0;
-    token* t = (token*)malloc(bufsize * sizeof(token));
-    if (!(file_ptr = fopen(file, "rt"))) {
-        perror(file);
-        return NULL;
-    }
-    while (c != EOF) {
-        skip();
-        t[pos] = get_tok();
-        if (t[pos].i) {
-            // printf("%s \'%s\'\n", CC_TYPES[t[pos].i - 128], t[pos].s);
-            pos++;
-        }
-        if (pos >= bufsize) {
-            bufsize *= 2;
-            t = (token*)realloc(t, bufsize * sizeof(token));
-        }
-    }
-    
-    fclose(file_ptr);
-    return t;
-}
+}*/
