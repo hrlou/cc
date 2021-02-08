@@ -23,14 +23,24 @@ void lexer_advance(lexer_T* lex) {
     }
 }
 
-/* see the <offset> spaces ahead */
+/* advance past the current token */
+token_T* lexer_advance_tok(lexer_T* lex, token_T* tok) {
+    lexer_jump(lex, strlen(tok->val));
+    return tok;
+}
+
+/* jump the <offset> charecters ahead */
+void lexer_jump(lexer_T* lex, int offset) {
+    lex->i = ((lex->i + offset) > lex->max) ? lex->max : (lex->i + offset);
+    lex->c = lex->s[lex->i];
+}
+
+/* see the <offset> charecters ahead */
 char lexer_peek(lexer_T* lex, int offset) {
     return lex->s[((lex->i + offset) < (lex->max)) ? (lex->i + offset) : (lex->max)];
 }
 
-token_T* lexer_advance_with(lexer_T* lex, token_T* tok);
-token_T* lexer_advance_current(lexer_T* lex, int type);
-
+/* skip whitespace and comments */
 void lexer_skip(lexer_T* lex) {
     /* I understand the stigma around gotos, I find it alot cleaner in this context */
     check_exit:
@@ -59,272 +69,167 @@ void lexer_skip(lexer_T* lex) {
 
 }
 
-token_T* lexer_parse_id(lexer_T* lex);
-token_T* lexer_parse_number(lexer_T* lex);
-token_T* lexer_parse_hex(lexer_T* lex);
-token_T* lexer_parse_literal(lexer_T* lex);
-
-token_T* lexer_next_token(lexer_T* lex) {
-
+/* parse identifiers */
+token_T* lexer_parse_id(lexer_T* lex) {
+    int type = Id;
+    char* value = calloc(1, sizeof(char));
+    for (; isalpha(lex->c) || lex->c == '_'; lexer_advance(lex)) {
+        value = realloc(value, (strlen(value) + 2) * sizeof(char));
+        strcat(value, (char[]){lex->c, 0});
+    }
+    return init_tok(value, type);
 }
 
-/*token get_tok(void) {
-    token t;
-    t.i = 0;
-    int j = 1;
-    if (isreserved(c)) {
-        switch (c) {
-            case ';':
-                t.s = ";";
-                t.i = Semi;
-                break;
-            case ',':
-                t.s = ",";
-                t.i = Comma;
-                break;
-            case '(':
-                t.s = "(";
-                t.i = Lpar;
-                break;
-            case ')':
-                t.s = ")";
-                t.i = Rpar;
-                break;
-            case '{':
-                t.s = "{";
-                t.i = Lbc;
-                break;
-            case '}':
-                t.s = "}";
-                t.i = Rbc;
-                break;
-            case ':':
-                t.s = ":";
-                t.i = Col;
-                break;
-            case '[':
-                t.s = "[";
-                t.i = Lbr;
-                break;
-            case ']':
-                t.s = "]";
-                t.i = Rbr;
-                break;
-            case '~':
-                t.s = "~";
-                t.i = Not;
-                break;
-            case '=':
-                c = fgetc(file_ptr);
-                if (c == '=') {
-                    t.s = "==";
-                    t.i = Eq;
-                } else {
-                    t.s = "=";
-                    t.i = Assign;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '!':
-                c = fgetc(file_ptr);
-                if (c == '=') {
-                    t.s = "!=";
-                    t.i = Neq;
-                } else {
-                    t.s = "!";
-                    t.i = LNot;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '<':
-                c = fgetc(file_ptr);
-                if (c == '=') {
-                    t.s = "<=";
-                    t.i = Lte;
-                } else if (c == '<') {
-                    c = fgetc(file_ptr);
-                    if (c == '=') {
-                        t.s = "<<=";
-                        t.i = ShlE;
-                        break;
-                    }
-                    ungetc(c, file_ptr);
-                    t.s = "<<";
-                    t.i = Shl;
-                } else {
-                    t.s = "<";
-                    t.i = Lt;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '>':
-                c = fgetc(file_ptr);
-                if (c == '=') {
-                    t.s = ">=";
-                    t.i = Gte;
-                } else if (c == '>') {
-                    c = fgetc(file_ptr);
-                    if (c == '=') {
-                        t.s = ">>=";
-                        t.i = ShrE;
-                        break;
-                    }
-                    ungetc(c, file_ptr);
-                    t.s = ">>";
-                    t.i = Shr;
-                } else {
-                    t.s = ">";
-                    t.i = Gt;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '+':
-                c = fgetc(file_ptr);
-                if (c == '+') {
-                    t.s = "++";
-                    t.i = Inc;
-                } else if (c == '=') {
-                    t.s = "+=";
-                    t.i = AddE;
-                } else {
-                    t.s = "+";
-                    t.i = Add;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '-':
-                c = fgetc(file_ptr);
-                if (c == '-') {
-                    t.s = "--";
-                    t.i = Dec;
-                } else if (c == '=') {
-                    t.s = "+=";
-                    t.i = SubE;
-                } else {
-                    t.s = "-";
-                    t.i = Sub;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '&':
-                c = fgetc(file_ptr);
-                if (c == '&') {
-                    t.s = "&&";
-                    t.i = LAnd;
-                } else if (c == '=') {
-                    t.s = "&=";
-                    t.i = AndE;
-                } else {
-                    t.s = "&";
-                    t.i = And;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '|':
-                c = fgetc(file_ptr);
-                if (c == '|') {
-                    t.s = "||";
-                    t.i = Lor;
-                } else if (c == '=') {
-                    t.s = "|=";
-                    t.i = OrE;
-                } else {
-                    t.s = "|";
-                    t.i = Or;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '^':
-                c = fgetc(file_ptr);
-                if (c == '=') {
-                    t.s = "^=";
-                    t.i = XorE;
-                } else {
-                    t.s = "^";
-                    t.i = Xor;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '*':
-                c = fgetc(file_ptr);
-                if (c == '=') {
-                    t.s = "*=";
-                    t.i = MulE;
-                } else {
-                    t.s = "*";
-                    t.i = Mul;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '/':
-                c = fgetc(file_ptr);
-                if (c == '=') {
-                    t.s = "/=";
-                    t.i = DivE;
-                } else {
-                    t.s = "/";
-                    t.i = Div;
-                    ungetc(c, file_ptr);
-                }
-                break;
-            case '%':
-                c = fgetc(file_ptr);
-                if (c == '=') {
-                    t.s = "%=";
-                    t.i = ModE;
-                } else {
-                    t.s = "%";
-                    t.i = Mod;
-                    ungetc(c, file_ptr);
-                }
-                break;
-        }
-    } else if (c == EOF) {
-        t.s = "";
-        t.i = Eof;
-    } else if (c == '"' || c == '\'') {
-        t.i = c == '"' ? StrL : ChL;
-        int delim = c;
-        do {
-            c = fgetc(file_ptr);
-            j++;
-        } while (c != delim);
-        fseek(file_ptr, -j, SEEK_CUR);
-        t.s = (char*)malloc(j + 1);
-        fread(t.s, j, 1, file_ptr);
-    } else if (c >= '0' && c <= '9') {
-        for (; (c >= '0' && c <= '9'); j++) {
-            c = fgetc(file_ptr);
-        }
-        fseek(file_ptr, -j, SEEK_CUR);
-        t.s = (char*)malloc(j + 1);
-        fread(t.s, j - 1, 1, file_ptr);
-        t.i = Num;
-    } else if (!isreserved(c)) {
-        for (; (!isreserved(c) && !isspace(c)) || (c == '_'); j++) {
-            c = fgetc(file_ptr);
-        }
-        fseek(file_ptr, -j, SEEK_CUR);
-        t.s = (char*)malloc(j + 1);
-        fread(t.s, j - 1, 1, file_ptr);
-        t.i = Id;
-
-        if (strcmp(t.s, "return") == 0) {
-            t.i = Return;
-        } else if (strcmp(t.s, "if") == 0) {
-            t.i = If;
-        } else if (strcmp(t.s, "else") == 0) {
-            t.i = Else;
-        } else if (strcmp(t.s, "while") == 0) {
-            t.i = While;
-        } else if (strcmp(t.s, "sizeof") == 0) {
-            t.i = Sizeof;
-        } else if (strcmp(t.s, "int") == 0) {
-            t.i = Int;
-        } else if (strcmp(t.s, "char") == 0) {
-            t.i = Char;
-        }
+token_T* lexer_parse_number(lexer_T* lex) {
+    int type = Num;
+    char* value = calloc(1, sizeof(char));
+    for (; isdigit(lex->c); lexer_advance(lex)) {
+        value = realloc(value, (strlen(value) + 2) * sizeof(char));
+        strcat(value, (char[]){lex->c, 0});
     }
-    // fseek(file_ptr, -1L, SEEK_CUR);
-    return t;
-}*/
+    return init_tok(value, type);
+}
+
+token_T* lexer_parse_literal(lexer_T* lex) {
+    char delim = lex->c;
+    int type = (delim == '\"') ? StrL : ChL;
+    char* value = calloc(1, sizeof(char));
+    do {
+        value = realloc(value, (strlen(value) + 2) * sizeof(char));
+        strcat(value, (char[]){lex->c, 0});
+        lexer_advance(lex);
+    } while (lex->c != delim);
+    strcat(value, (char[]){delim, 0});
+    lexer_advance(lex);
+    return init_tok(value, type);
+}
+
+token_T* lexer_next_token(lexer_T* lex) {
+    lexer_skip(lex);
+
+    if (lex->c >= '0' && lex->c <= '9') {
+        return lexer_parse_number(lex);
+    }
+
+    if (isalpha(lex->c)) {
+        return lexer_parse_id(lex);
+    }
+
+    switch (lex->c) {
+        case ';': return lexer_advance_tok(lex, init_tok(";", Semi));
+        case ',': return lexer_advance_tok(lex, init_tok(",", Comma));
+        case '(': return lexer_advance_tok(lex, init_tok("(", Lpar));
+        case ')': return lexer_advance_tok(lex, init_tok(")", Rpar));
+        case '{': return lexer_advance_tok(lex, init_tok("{", Lbr));
+        case '}': return lexer_advance_tok(lex, init_tok("}", Rbr));
+        case ':': return lexer_advance_tok(lex, init_tok(":", Col));
+        case '[': return lexer_advance_tok(lex, init_tok("[", Lbc));
+        case ']': return lexer_advance_tok(lex, init_tok("]", Rbc));
+        case '~': return lexer_advance_tok(lex, init_tok("~", Not));
+        case '=': {
+            if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("==", Eq));
+            } else {
+                return lexer_advance_tok(lex, init_tok("=", Assign));
+            }
+        }
+        case '!': {
+            if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("!=", Neq));
+            } else {
+                return lexer_advance_tok(lex, init_tok("!", LNot));
+            }
+        }
+        case '<': {
+            if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("<=", Lte));
+            } else if (lexer_peek(lex, 1) == '<') {
+                return lexer_advance_tok(lex, (lexer_peek(lex, 2) == '=') ? init_tok("<<=", ShlE) : init_tok("<<", Shl));
+            } else {
+                return lexer_advance_tok(lex, init_tok("<", Lt));
+            }
+        }
+        case '>': {
+            if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok(">=", Gte));
+            } else if (lexer_peek(lex, 1) == '>') {
+                return lexer_advance_tok(lex, (lexer_peek(lex, 2) == '=') ? init_tok(">>=", ShrE) : init_tok(">>", Shr));
+            } else {
+                return lexer_advance_tok(lex, init_tok(">", Gt));
+            }
+        }
+        case '+': {
+            if (lexer_peek(lex, 1) == '+') {
+                return lexer_advance_tok(lex, init_tok("++", Inc));
+            } else if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("+=", AddE));
+            } else {
+                return lexer_advance_tok(lex, init_tok("+", Add));
+            }
+        }
+        case '-': {
+            if (lexer_peek(lex, 1) == '-') {
+                return lexer_advance_tok(lex, init_tok("--", Dec));
+            } else if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("-=", SubE));
+            } else {
+                return lexer_advance_tok(lex, init_tok("-", Sub));
+            }
+        }
+        case '&': {
+            if (lexer_peek(lex, 1) == '&') {
+                return lexer_advance_tok(lex, init_tok("&&", LAnd));
+            } else if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("&=", AndE));
+            } else {
+                return lexer_advance_tok(lex, init_tok("&", And));
+            }
+        }
+        case '|': {
+            if (lexer_peek(lex, 1) == '|') {
+                return lexer_advance_tok(lex, init_tok("||", Lor));
+            } else if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("|=", OrE));
+            } else {
+                return lexer_advance_tok(lex, init_tok("|", Or));
+            }
+        }
+        case '^': {
+            if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("^=", XorE));
+            } else {
+                return lexer_advance_tok(lex, init_tok("^", Xor));
+            }
+        }
+        case '*': {
+            if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("*=", MulE));
+            } else {
+                return lexer_advance_tok(lex, init_tok("*", Mul));
+            }
+        }
+        case '/': {
+            if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("/=", DivE));
+            } else {
+                return lexer_advance_tok(lex, init_tok("/", Div));
+            }
+        }
+        case '%': {
+            if (lexer_peek(lex, 1) == '=') {
+                return lexer_advance_tok(lex, init_tok("%=", ModE));
+            } else {
+                return lexer_advance_tok(lex, init_tok("%", Mod));
+            }
+        }
+        case '\'':
+        case '\"':
+            return lexer_parse_literal(lex);
+        case 0:
+            return init_tok(0, Eof);
+        default: {
+            fprintf(stderr, "[lexer] unexpected token '%c'\n", lex->c);
+        } break;
+    }
+    return init_tok(0, Eof);
+}

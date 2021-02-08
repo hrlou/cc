@@ -13,13 +13,12 @@ typedef struct LEXER {
 
 lexer_T* lexer_init(char* s);
 void lexer_advance(lexer_T* lex);
+void lexer_jump(lexer_T* lex, int offset);
 char lexer_peek(lexer_T* lex, int offset);
-token_T* lexer_advance_with(lexer_T* lex, token_T* tok);
-token_T* lexer_advance_current(lexer_T* lex, int type);
+token_T* lexer_advance_tok(lexer_T* lex, token_T* tok);
 void lexer_skip(lexer_T* lex);
 token_T* lexer_parse_id(lexer_T* lex);
-token_T* lexer_parse_number(lexer_T* lex);
-token_T* lexer_parse_hex(lexer_T* lex);
+token_T* lexer_parse_decimal(lexer_T* lex);
 token_T* lexer_parse_literal(lexer_T* lex);
 token_T* lexer_next_token(lexer_T* lex);
 

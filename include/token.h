@@ -1,6 +1,9 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#define puttok(TOK) \
+    fprintf(stderr, "%s '%s'\n", type_to_str(TOK->type), TOK->val)
+
 /*  ! " # % & ' ( ) * + , - . / : ; < = > ? [ \ ] ^ _ { | } ~   */
 /*  = ; , : ( ) [ ] { } ! && || == ! => < >= <= ++ -- + - * / % ~ & | ^ << >> &= |= ^= <<= >>= */
 typedef struct TOKEN {
@@ -24,10 +27,10 @@ typedef struct TOKEN {
         AndE, OrE, XorE, ShlE, ShrE,
         /* keywords */
         Eof
-    } type ;
+    } type;
 } token_T;
 
-
+token_T* init_tok(char* val, int type);
 const char* type_to_str(int type);
 const char* tok_to_str(token_T* tok);
 

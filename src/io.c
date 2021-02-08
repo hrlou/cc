@@ -13,7 +13,7 @@ char* read_file(const char* filename) {
     fseek(fp, 0, SEEK_END); 
     size = ftell(fp); 
     rewind(fp);
-    char* buf = (char*) calloc(size, sizeof(char));
+    char* buf = (char*) calloc(size + 1, sizeof(char));
     fread(buf, sizeof(char), size, fp);
     buf[size] = '\0';
     fclose(fp);

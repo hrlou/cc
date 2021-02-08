@@ -1,5 +1,6 @@
 #include "token.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 token_T* init_tok(char* val, int type) {
     token_T* token = calloc(1, sizeof(struct TOKEN));
