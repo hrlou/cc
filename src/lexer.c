@@ -59,7 +59,11 @@ void lexer_skip(lexer_T* lex) {
             for (; lex->c != '\n' && lex->c != '\r'; lexer_advance(lex));
         } else if (lexer_peek(lex, 1) == '*') {
             /* C Style */
-            for (; (lex->c != '*') && (lexer_peek(lex, 1) != '/'); lexer_advance(lex));
+            // exit(0);
+            lexer_jump(lex, 2);
+            for (; !((lex->c == '*') && (lexer_peek(lex, 1) == '/')); lexer_advance(lex));
+            lexer_jump(lex, 2);
+
         }
     }
     if (!isspace(lex->c)) {
@@ -111,7 +115,7 @@ token_T* lexer_next_token(lexer_T* lex) {
         return lexer_parse_number(lex);
     }
 
-    if (isalpha(lex->c)) {
+    if (isalpha(lex->c) || lex->c == '_') {
         return lexer_parse_id(lex);
     }
 

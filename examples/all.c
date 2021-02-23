@@ -1,4 +1,5 @@
-1024 putchar =
+/* comment */
+1024 putchar 'a' "Hello" =
 ; , : ( ) [ ] { }
 == != > < >= <=
 ! && ||
