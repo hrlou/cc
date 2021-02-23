@@ -10,23 +10,23 @@ typedef struct TOKEN {
     char* val;
     enum {
         /* syntax */
-        Num, Hex, Id, ChL, StrL, Assign, 
-        Semi, Comma, Col, Lpar, Rpar, Lbc, Rbc, Lbr, Rbr,
+        TOK_NUM, TOK_HEX, TOK_IDENTIFIER, TOK_CHAR_LITERAL, TOK_STRING_LITERAL, TOK_ASSIGN, 
+        TOK_SEMICOLON, TOK_COMMA, TOK_COLON, TOK_LEFT_PARENTHESIS, TOK_RIGHT_PARENTHESIS, TOK_LEFT_BRACKET, TOK_RIGHT_BRACKET, TOK_LEFT_BRACE, TOK_RIGHT_BRACE,
         /* logical */
-        LNot, LAnd, Lor,
+        TOK_LOGICAL_NOT, TOK_LOGICAL_AND, TOK_LOGICAL_OR,
         /* comparison */
-        Eq, Neq, Gt, Lt, Gte, Lte,
+        TOK_COMP_EQUAL, TOK_COMP_NOT_EQUAL, TOK_COMP_GREATER, TOK_COMP_LESS, TOK_COMP_GREATER_EQUAL, TOK_COMP_LESS_EQUAL,
         /*  arithmatic */
-        Inc, Dec,
-        Add, Sub, Mul, Div, Mod,
+        TOK_INCREMENT, TOK_DEINCREMENT,
+        TOK_ADD, TOK_SUBTRACT, TOK_MULTIPLY, TOK_DIVIDE, TOK_MODULO,
         /*  compound arithmatic */
-        AddE, SubE, MulE, DivE, ModE,
+        TOK_ADD_EQUAL, TOK_SUBTRACT_EQUAL, TOK_MULTIPLY_EQUAL, TOK_DIVIDE_EQUAL, TOK_MODULO_EQUAL,
         /*  bitwise */
-        Not, And, Or, Xor, Shl, Shr,
+        TOK_BIT_NOT, TOK_BIT_AND, TOK_BIT_OR, TOK_BIT_XOR, TOK_BIT_SHIFT_LEFT, TOK_BIT_SHIFT_RIGHT,
         /*  compound bitwise */
-        AndE, OrE, XorE, ShlE, ShrE,
+        TOK_BIT_AND_EQUAL, TOK_BIT_OR_EQUAL, TOK_BIT_XOR_EQUAL, TOK_BIT_SHIFT_LEFT_EQUAL, TOK_BIT_SHIFT_RIGHT_EQUAL,
         /* keywords */
-        Eof
+        TOK_EOF
     } type;
 } token_T;
 

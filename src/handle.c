@@ -9,7 +9,7 @@ void compile_src(char* s) {
 	do {
 		tok = lexer_next_token(lex);
 		puttok(tok);
-	} while (tok->type != Eof);
+	} while (tok->type != TOK_EOF);
 }
 
 void compile_file(const char* filename) {

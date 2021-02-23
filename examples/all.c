@@ -1,5 +1,5 @@
 /* comment */
-1024 putchar 'a' "Hello" =
+1024 0xa2fb putchar 'a' "Hello" =
 ; , : ( ) [ ] { }
 == != > < >= <=
 ! && ||
